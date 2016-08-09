@@ -143,7 +143,16 @@ module LogStash; module Outputs; class ElasticSearch;
       end
 
       if @action == 'update'
-        params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
+        begin
+          params[:_upsert] = LogStash::Json.load(event.sprintf(@upsert)) if @upsert != ""
+        rescue => e
+          @logger.error(
+            "JSON parse error. event: #{event}",
+            :error_message => e.message,
+            :class => e.class.name
+          )
+          event.cancel
+        end
         params[:_script] = event.sprintf(@script) if @script != ""
         params[:_retry_on_conflict] = @retry_on_conflict
       end
